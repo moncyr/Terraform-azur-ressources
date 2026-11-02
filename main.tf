@@ -1,3 +1,4 @@
+# definition des variables
 terraform {
   required_version = ">= 1.5.0"
 
