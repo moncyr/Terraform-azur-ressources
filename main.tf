@@ -77,7 +77,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   disable_password_authentication = false
 
-  admin_password = "cyrille"
+  admin_password = "Password123"
 
   network_interface_ids = [
     azurerm_network_interface.nic.id
