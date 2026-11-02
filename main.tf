@@ -11,8 +11,7 @@ terraform {
 
 provider "azurerm" {
   features {}
-  subscription_id = var.subscriptionid
-}
+  }
 
 variable "subscription_id" {
   type = string
