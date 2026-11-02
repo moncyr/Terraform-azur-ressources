@@ -96,6 +96,30 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 }
 
+# Conteneur Docker Azure
+
+resource "azurerm_container_group" "docker" {
+  name                = "docker-demo"
+  location            = azurerm_resource_group.demo.location
+  resource_group_name = azurerm_resource_group.demo.name
+
+  ip_address_type = "Public"
+  dns_name_label  = "docker-demo-cyrille"
+  os_type         = "Linux"
+
+  container {
+    name   = "nginx"
+    image  = "nginx:latest"
+    cpu    = "1"
+    memory = "1.5"
+
+    ports {
+      port     = 80
+      protocol = "TCP"
+    }
+  }
+}
+
 # Sorties
 
 output "resource_group_name" {
