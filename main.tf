@@ -19,6 +19,7 @@ provider "azurerm" {
 resource "azurerm_resource_group" "demo" {
   name     = var.resource_group_name
   location = var.location
+  tags = var.common_tags
 }
 
 # Réseau virtuel
@@ -28,6 +29,7 @@ resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
+  tags = var.common_tags
 }
 
 # Sous-réseau
@@ -37,6 +39,7 @@ resource "azurerm_subnet" "subnet" {
   resource_group_name  = azurerm_resource_group.demo.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
+  tags = var.common_tags
 }
 
 # Adresse IP publique
@@ -46,6 +49,7 @@ resource "azurerm_public_ip" "pip" {
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
   allocation_method   = "Static"
+  tags = var.common_tags
 }
 
 # Interface réseau
@@ -61,6 +65,7 @@ resource "azurerm_network_interface" "nic" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.pip.id
   }
+  tags = var.common_tags
 }
 
 # Machine virtuelle Ubuntu
@@ -92,6 +97,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     sku       = "22_04-lts-gen2"
     version   = "latest"
   }
+  tags = var.common_tags
 }
 
 # Container Docker
@@ -116,6 +122,7 @@ resource "azurerm_container_group" "docker" {
       protocol = "TCP"
     }
   }
+tags = var.common_tags
 }
 
 data "azurerm_client_config" "current" {}
@@ -145,6 +152,7 @@ resource "azurerm_key_vault" "kv" {
       "Delete"
     ]
   }
+tags = var.common_tags
 }
 
 # Outputs
