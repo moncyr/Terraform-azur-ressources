@@ -71,7 +71,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   resource_group_name = azurerm_resource_group.demo.name
   location            = azurerm_resource_group.demo.location
 
-  size = "Standard_B2s"
+  size = "Standard_DS1_v2"
 
   admin_username = "cyrillemonthe"
 
