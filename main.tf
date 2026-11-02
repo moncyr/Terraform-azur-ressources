@@ -1,4 +1,4 @@
-# Création du groupe de ressources
+# Création de la VM
 
 terraform {
   required_version = ">= 1.5.0"
