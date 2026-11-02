@@ -122,12 +122,12 @@ resource "azurerm_key_vault" "kv" {
   name                        = "kvdemocyrille2026"
   location                    = azurerm_resource_group.demo.location
   resource_group_name         = azurerm_resource_group.demo.name
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  tenant_id                   = data.azurerm_client_config.current.ARM_TENANT_ID
   sku_name                    = "standard"
   purge_protection_enabled    = false
 
   access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
+    tenant_id = data.azurerm_client_config.current.ARM_TENANT_ID
     object_id = data.azurerm_client_config.current.object_id
 
     secret_permissions = [
