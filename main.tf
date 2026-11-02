@@ -1,4 +1,5 @@
 # main.tf
+# deploiement de test sur azure
 
 terraform {
   required_version = ">= 1.5.0"
