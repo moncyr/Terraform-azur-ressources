@@ -1,3 +1,13 @@
+variable "common_tags" {
+  description = "Tags appliqués à toutes les ressources"
+  type        = map(string)
+
+  default = {
+    Projet     = "DevoirCR460"
+    Environnement = "Lab"
+    GerePar    = "Terraform"
+  }
+}
 variable "location" {
   description = "Région Azure"
   type        = string
