@@ -1,3 +1,4 @@
+# création des groupe de ressources
 terraform {
   required_version = ">= 1.5.0"
 
