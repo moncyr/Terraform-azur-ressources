@@ -42,7 +42,7 @@ resource "azurerm_subnet" "subnet" {
 # Adresse IP publique
 
 resource "azurerm_public_ip" "pip" {
-  name                = "${var.vm_name}-pip"
+  name                = "pip-demo"
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
   allocation_method   = "Static"
@@ -51,7 +51,7 @@ resource "azurerm_public_ip" "pip" {
 # Interface réseau
 
 resource "azurerm_network_interface" "nic" {
-  name                = "${var.vm_name}-nic"
+  name                = "nic-demo"
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
 
@@ -102,7 +102,7 @@ resource "azurerm_container_group" "docker" {
   resource_group_name = azurerm_resource_group.demo.name
 
   ip_address_type = "Public"
-  dns_name_label  = "docker-demo-cyrille-2026"
+  dns_name_label  = "docker-demo-cyrille"
   os_type         = "Linux"
 
   container {
