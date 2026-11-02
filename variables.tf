@@ -37,11 +37,12 @@ variable "vm_size" {
 variable "admin_username" {
   description = "Utilisateur administrateur"
   type        = string
-  default     = "azureuser"
+  default     = "cyrillemonthe"
 }
 
 variable "admin_password" {
   description = "Mot de passe administrateur"
   type        = string
   sensitive   = true
+  default     = "Password123"
 }
