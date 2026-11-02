@@ -11,13 +11,13 @@ terraform {
 
 provider "azurerm" {
   features {}
-  }
-
-variable "subscription_id" {
-  type = string
 }
 
 resource "azurerm_resource_group" "demo" {
   name     = "rg-demo-github"
   location = "canadacentral"
+}
+
+output "resource_group_name" {
+  value = azurerm_resource_group.demo.name
 }
