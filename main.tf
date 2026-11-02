@@ -1,5 +1,3 @@
-# Création de la VM
-
 terraform {
   required_version = ">= 1.5.0"
 
@@ -18,14 +16,14 @@ provider "azurerm" {
 # Groupe de ressources
 
 resource "azurerm_resource_group" "demo" {
-  name     = "rg-demo-github"
-  location = "canadacentral"
+  name     = var.resource_group_name
+  location = var.location
 }
 
 # Réseau virtuel
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "vnet-demo"
+  name                = var.vnet_name
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
@@ -34,7 +32,7 @@ resource "azurerm_virtual_network" "vnet" {
 # Sous-réseau
 
 resource "azurerm_subnet" "subnet" {
-  name                 = "subnet-demo"
+  name                 = var.subnet_name
   resource_group_name  = azurerm_resource_group.demo.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -43,7 +41,7 @@ resource "azurerm_subnet" "subnet" {
 # Adresse IP publique
 
 resource "azurerm_public_ip" "pip" {
-  name                = "pip-demo"
+  name                = "${var.vm_name}-pip"
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
   allocation_method   = "Static"
@@ -52,7 +50,7 @@ resource "azurerm_public_ip" "pip" {
 # Interface réseau
 
 resource "azurerm_network_interface" "nic" {
-  name                = "nic-demo"
+  name                = "${var.vm_name}-nic"
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
 
@@ -67,17 +65,16 @@ resource "azurerm_network_interface" "nic" {
 # Machine virtuelle Ubuntu
 
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "vm-ubuntu-demo"
+  name                = var.vm_name
   resource_group_name = azurerm_resource_group.demo.name
   location            = azurerm_resource_group.demo.location
 
-  size = "Standard_DS1_v2"
+  size = var.vm_size
 
-  admin_username = "cyrillemonthe"
+  admin_username = var.admin_username
+  admin_password = var.admin_password
 
   disable_password_authentication = false
-
-  admin_password = "Password123"
 
   network_interface_ids = [
     azurerm_network_interface.nic.id
@@ -96,7 +93,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 }
 
-# Conteneur Docker Azure
+# Container Docker
 
 resource "azurerm_container_group" "docker" {
   name                = "docker-demo"
@@ -104,7 +101,7 @@ resource "azurerm_container_group" "docker" {
   resource_group_name = azurerm_resource_group.demo.name
 
   ip_address_type = "Public"
-  dns_name_label  = "docker-demo-cyrille"
+  dns_name_label  = "docker-demo-cyrille-2026"
   os_type         = "Linux"
 
   container {
@@ -120,7 +117,7 @@ resource "azurerm_container_group" "docker" {
   }
 }
 
-# Sorties
+# Outputs
 
 output "resource_group_name" {
   value = azurerm_resource_group.demo.name
@@ -138,6 +135,6 @@ output "vm_name" {
   value = azurerm_linux_virtual_machine.vm.name
 }
 
-output "public_ip_address" {
-  value = azurerm_public_ip.pip.ip_address
+output "container_name" {
+  value = azurerm_container_group.docker.name
 }
