@@ -7,6 +7,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    # NOUVEAU : provider azapi, utilisé pour publier l'image dans l'ACR
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.0"
+    }
   }
 }
 
@@ -14,12 +19,15 @@ provider "azurerm" {
   features {}
 }
 
+# NOUVEAU : azapi utilise les mêmes variables ARM_* que azurerm
+provider "azapi" {}
+
 # Groupe de ressources
 
 resource "azurerm_resource_group" "demo" {
   name     = var.resource_group_name
   location = var.location
-  tags = var.common_tags
+  tags     = var.common_tags
 }
 
 # Réseau virtuel
@@ -29,7 +37,7 @@ resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
-  tags = var.common_tags
+  tags                = var.common_tags
 }
 
 # Sous-réseau
@@ -39,7 +47,6 @@ resource "azurerm_subnet" "subnet" {
   resource_group_name  = azurerm_resource_group.demo.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
- 
 }
 
 # Adresse IP publique
@@ -49,7 +56,7 @@ resource "azurerm_public_ip" "pip" {
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
   allocation_method   = "Static"
-  tags = var.common_tags
+  tags                = var.common_tags
 }
 
 # Interface réseau
@@ -100,7 +107,45 @@ resource "azurerm_linux_virtual_machine" "vm" {
   tags = var.common_tags
 }
 
-# Container Docker
+# ---------------------------------------------------------------
+# NOUVEAU : Azure Container Registry (ACR)
+# Le nom doit être unique dans tout Azure : lettres et chiffres
+# seulement, 5 à 50 caractères.
+# ---------------------------------------------------------------
+
+resource "azurerm_container_registry" "acr" {
+  name                = "acrdemocyrille2026"
+  resource_group_name = azurerm_resource_group.demo.name
+  location            = azurerm_resource_group.demo.location
+  sku                 = "Basic"
+  admin_enabled       = true # permet au container group de s'authentifier
+  tags                = var.common_tags
+}
+
+# ---------------------------------------------------------------
+# NOUVEAU : publication de l'image dans l'ACR
+# Azure copie lui-même l'image nginx de Docker Hub vers l'ACR
+# (équivalent de "az acr import"), donc aucun Docker n'est
+# nécessaire sur la machine qui exécute Terraform.
+# ---------------------------------------------------------------
+
+resource "azapi_resource_action" "publish_nginx" {
+  type        = "Microsoft.ContainerRegistry/registries@2022-12-01"
+  resource_id = azurerm_container_registry.acr.id
+  action      = "importImage"
+  method      = "POST"
+
+  body = {
+    source = {
+      registryUri = "docker.io"
+      sourceImage = "library/nginx:latest"
+    }
+    targetTags = ["nginx:latest"]
+    mode       = "Force" # écrase le tag s'il existe déjà
+  }
+}
+
+# Container Docker (MODIFIÉ : l'image vient maintenant de l'ACR)
 
 resource "azurerm_container_group" "docker" {
   name                = "docker-demo"
@@ -111,9 +156,16 @@ resource "azurerm_container_group" "docker" {
   dns_name_label  = "docker-demo-cyrille"
   os_type         = "Linux"
 
+  # NOUVEAU : identifiants pour tirer l'image depuis l'ACR
+  image_registry_credential {
+    server   = azurerm_container_registry.acr.login_server
+    username = azurerm_container_registry.acr.admin_username
+    password = azurerm_container_registry.acr.admin_password
+  }
+
   container {
     name   = "nginx"
-    image  = "nginx:latest"
+    image  = "${azurerm_container_registry.acr.login_server}/nginx:latest" # MODIFIÉ
     cpu    = "1"
     memory = "1.5"
 
@@ -122,7 +174,11 @@ resource "azurerm_container_group" "docker" {
       protocol = "TCP"
     }
   }
-tags = var.common_tags
+
+  tags = var.common_tags
+
+  # NOUVEAU : le conteneur n'est déployé qu'une fois l'image publiée
+  depends_on = [azapi_resource_action.publish_nginx]
 }
 
 data "azurerm_client_config" "current" {}
@@ -152,7 +208,7 @@ resource "azurerm_key_vault" "kv" {
       "Delete"
     ]
   }
-tags = var.common_tags
+  tags = var.common_tags
 }
 
 # Outputs
@@ -175,4 +231,9 @@ output "vm_name" {
 
 output "container_name" {
   value = azurerm_container_group.docker.name
+}
+
+# NOUVEAU
+output "acr_login_server" {
+  value = azurerm_container_registry.acr.login_server
 }
