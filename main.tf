@@ -1,13 +1,21 @@
 # definition des variables
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.6.0"
+
+  # Lien avec le workspace HCP Terraform (utilisé par GitHub Actions)
+  cloud {
+    organization = "polytechnique_first_test"
+    workspaces {
+      name = "Terraform-azur-ressources"
+    }
+  }
 
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
-    # NOUVEAU : provider azapi, utilisé pour publier l'image dans l'ACR
+    # Provider azapi, utilisé pour publier l'image dans l'ACR
     azapi = {
       source  = "Azure/azapi"
       version = "~> 2.0"
@@ -19,7 +27,7 @@ provider "azurerm" {
   features {}
 }
 
-# NOUVEAU : azapi utilise les mêmes variables ARM_* que azurerm
+# azapi utilise les mêmes variables ARM_* que azurerm
 provider "azapi" {}
 
 # Groupe de ressources
@@ -107,11 +115,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
   tags = var.common_tags
 }
 
-# ---------------------------------------------------------------
-# NOUVEAU : Azure Container Registry (ACR)
+# Azure Container Registry (ACR)
 # Le nom doit être unique dans tout Azure : lettres et chiffres
 # seulement, 5 à 50 caractères.
-# ---------------------------------------------------------------
 
 resource "azurerm_container_registry" "acr" {
   name                = "acrdemocyrille2026"
@@ -122,12 +128,10 @@ resource "azurerm_container_registry" "acr" {
   tags                = var.common_tags
 }
 
-# ---------------------------------------------------------------
-# NOUVEAU : publication de l'image dans l'ACR
+# Publication de l'image dans l'ACR
 # Azure copie lui-même l'image nginx de Docker Hub vers l'ACR
 # (équivalent de "az acr import"), donc aucun Docker n'est
 # nécessaire sur la machine qui exécute Terraform.
-# ---------------------------------------------------------------
 
 resource "azapi_resource_action" "publish_nginx" {
   type        = "Microsoft.ContainerRegistry/registries@2022-12-01"
@@ -145,7 +149,7 @@ resource "azapi_resource_action" "publish_nginx" {
   }
 }
 
-# Container Docker (MODIFIÉ : l'image vient maintenant de l'ACR)
+# Container Docker (l'image vient de l'ACR)
 
 resource "azurerm_container_group" "docker" {
   name                = "docker-demo"
@@ -156,7 +160,7 @@ resource "azurerm_container_group" "docker" {
   dns_name_label  = "docker-demo-cyrille"
   os_type         = "Linux"
 
-  # NOUVEAU : identifiants pour tirer l'image depuis l'ACR
+  # Identifiants pour tirer l'image depuis l'ACR
   image_registry_credential {
     server   = azurerm_container_registry.acr.login_server
     username = azurerm_container_registry.acr.admin_username
@@ -165,7 +169,7 @@ resource "azurerm_container_group" "docker" {
 
   container {
     name   = "nginx"
-    image  = "${azurerm_container_registry.acr.login_server}/nginx:latest" # MODIFIÉ
+    image  = "${azurerm_container_registry.acr.login_server}/nginx:latest"
     cpu    = "1"
     memory = "1.5"
 
@@ -177,14 +181,13 @@ resource "azurerm_container_group" "docker" {
 
   tags = var.common_tags
 
-  # NOUVEAU : le conteneur n'est déployé qu'une fois l'image publiée
+  # Le conteneur n'est déployé qu'une fois l'image publiée
   depends_on = [azapi_resource_action.publish_nginx]
 }
 
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_key_vault" "kv" {
-
   name                = "kvdemocyrille2026"
   location            = azurerm_resource_group.demo.location
   resource_group_name = azurerm_resource_group.demo.name
@@ -196,9 +199,7 @@ resource "azurerm_key_vault" "kv" {
   purge_protection_enabled = false
 
   access_policy {
-
     tenant_id = data.azurerm_client_config.current.tenant_id
-
     object_id = data.azurerm_client_config.current.object_id
 
     secret_permissions = [
@@ -233,7 +234,6 @@ output "container_name" {
   value = azurerm_container_group.docker.name
 }
 
-# NOUVEAU
 output "acr_login_server" {
   value = azurerm_container_registry.acr.login_server
 }
